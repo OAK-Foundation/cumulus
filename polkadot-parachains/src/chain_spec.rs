@@ -16,12 +16,13 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
-use rococo_parachain_runtime::{AccountId, AuraId, Signature};
+use rococo_parachain_runtime::{AccountId, AuraId, Signature, TokensConfig, currency};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use serde_json::map::Map;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<rococo_parachain_runtime::GenesisConfig, Extensions>;
@@ -63,8 +64,12 @@ pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId where
 }
 
 pub fn get_chain_spec(id: ParaId) -> ChainSpec {
+	let mut properties = Map::new();
+	properties.insert("tokenSymbol".into(), "OAK".into());
+	properties.insert("tokenDecimals".into(), 15.into());
+
 	ChainSpec::from_genesis(
-		"Local Testnet",
+		"ORML Testnet",
 		"local_testnet",
 		ChainType::Local,
 		move || {
@@ -94,7 +99,8 @@ pub fn get_chain_spec(id: ParaId) -> ChainSpec {
 		vec![],
 		None,
 		None,
-		None,
+		// Properties
+		Some(properties),
 		Extensions {
 			relay_chain: "westend".into(),
 			para_id: id.into(),
@@ -179,6 +185,17 @@ fn testnet_genesis(
 		},
 		aura_ext: Default::default(),
 		parachain_system: Default::default(),
+		tokens: TokensConfig {
+			balances: endowed_accounts
+			.iter()
+			.flat_map(|x| {
+				vec![
+					(x.clone(), currency::DOT, 10u128.pow(16)),
+					(x.clone(), currency::KAR, 10u128.pow(16)),
+				]
+			})
+			.collect(),
+		},
 	}
 }
 
